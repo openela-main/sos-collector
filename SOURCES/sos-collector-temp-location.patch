@@ -1,0 +1,76 @@
+From ac9a24c90cdbaca79951854da1f37d8a10ac8cb9 Mon Sep 17 00:00:00 2001
+From: Jake Hunsaker <jhunsake@redhat.com>
+Date: Thu, 3 Oct 2019 11:58:04 -0400
+Subject: [PATCH 1/2] [soscollector] Enable --all-logs option
+
+The --all-logs option, while exposed via sos-collector, was not actually
+being passed to sosreport on the remote nodes.
+
+Now --all-logs is properly passed to sosreport as intended.
+
+Signed-off-by: Jake Hunsaker <jhunsake@redhat.com>
+---
+ soscollector/sos_collector.py | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/soscollector/sos_collector.py b/soscollector/sos_collector.py
+index 19dc368..55cd0ae 100644
+--- a/soscollector/sos_collector.py
++++ b/soscollector/sos_collector.py
+@@ -502,6 +502,8 @@ this utility or remote systems that it connects to.
+                 quote(self.config['case_id']))
+         if self.config['alloptions']:
+             self.config['sos_cmd'] += ' --alloptions'
++        if self.config['all_logs']:
++            self.config['sos_cmd'] += ' --all-logs'
+         if self.config['verify']:
+             self.config['sos_cmd'] += ' --verify'
+         if self.config['log_size']:
+-- 
+2.21.0
+
+
+From 0f599189909a6f07e148e68aeee7048c12808e37 Mon Sep 17 00:00:00 2001
+From: Jake Hunsaker <jhunsake@redhat.com>
+Date: Thu, 3 Oct 2019 11:54:18 -0400
+Subject: [PATCH 2/2] [soscollector] Revert temp directory to /var/tmp
+
+A previous commit inadvertantly changed the default temp directory to be
+created under /tmp instead of /var/tmp. This commit fixes that and
+returns the default location to /var/tmp.
+
+Signed-off-by: Jake Hunsaker <jhunsake@redhat.com>
+---
+ soscollector/configuration.py | 2 +-
+ soscollector/sos_collector.py | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/soscollector/configuration.py b/soscollector/configuration.py
+index 1c8baa1..c6f1ce3 100644
+--- a/soscollector/configuration.py
++++ b/soscollector/configuration.py
+@@ -45,7 +45,7 @@ class Configuration(dict):
+         self['ssh_key'] = None
+         self['sos_cmd'] = 'sosreport --batch'
+         self['no_local'] = False
+-        self['tmp_dir'] = None
++        self['tmp_dir'] = '/var/tmp'
+         self['out_dir'] = '/var/tmp/'
+         self['nodes'] = []
+         self['debug'] = False
+diff --git a/soscollector/sos_collector.py b/soscollector/sos_collector.py
+index 55cd0ae..93048d9 100644
+--- a/soscollector/sos_collector.py
++++ b/soscollector/sos_collector.py
+@@ -209,7 +209,7 @@ class SosCollector():
+         if self.config['verbose']:
+             self.console.debug(msg)
+ 
+-    def create_tmp_dir(self, location='/tmp'):
++    def create_tmp_dir(self, location='/var/tmp'):
+         '''Creates a temp directory to transfer sosreports to'''
+         tmpdir = tempfile.mkdtemp(prefix='sos-collector-', dir=location)
+         self.config['tmp_dir'] = tmpdir
+-- 
+2.21.0
+
